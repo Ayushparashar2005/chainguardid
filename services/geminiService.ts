@@ -26,14 +26,16 @@ export const analyzeSecurityLogs = async (recentBlocks: Block[]): Promise<string
       user: l.userId,
       ip: l.ipAddress,
       status: l.status,
+      reason: l.reason,
       action: l.action
     })), null, 2)}
 
     Task:
     1. Identify any suspicious patterns (e.g., repeated denied access, multiple IPs for one user, brute force attempts).
-    2. Verify if there are any anomalies in access times or user roles (assume 'admin' users shouldn't access from public IPs if evident, etc.).
-    3. Provide a concise security summary and specific recommendations.
-    4. Keep the tone professional, technical, and authoritative.
+    2. Analyze the "reason" for denials to see if existing firewall rules are effective.
+    3. Verify if there are any anomalies in access times or user roles.
+    4. Provide a concise security summary and specific recommendations (e.g., "Block IP 10.0.0.55").
+    5. Keep the tone professional, technical, and authoritative.
     
     Format the output as Markdown.
   `;

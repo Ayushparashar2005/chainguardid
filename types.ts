@@ -11,6 +11,7 @@ export interface AccessLog {
   ipAddress: string;
   action: string;
   status: AccessStatus;
+  reason?: string; // Reason for the status (e.g., "Firewall Block", "Invalid Signature")
   signature: string; // Mock cryptographic signature
 }
 

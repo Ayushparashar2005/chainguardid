@@ -8,7 +8,11 @@ import {
   Play, 
   Lock, 
   Server,
-  Terminal
+  Terminal,
+  Ban,
+  CheckCircle,
+  XCircle,
+  Activity
 } from 'lucide-react';
 import { AccessLog, AccessStatus, Block, GENESIS_HASH, ViewState } from './types';
 import { BlockchainVisualizer } from './components/BlockchainVisualizer';
@@ -33,7 +37,8 @@ const mockUsers = [
 ];
 
 const mockIPs = [
-  '192.168.1.10', '10.0.0.55', '172.16.254.1', '45.22.11.90', '203.0.113.42'
+  '192.168.1.10', '10.0.0.55', '172.16.254.1', '45.22.11.90', '203.0.113.42', '198.51.100.23',
+  '192.168.1.100' // Portal IP - Added so users can block it to test the manual verification denial
 ];
 
 const MAX_BLOCK_SIZE = 5;
@@ -46,6 +51,7 @@ export default function App() {
   const [isMining, setIsMining] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [blockedIPs, setBlockedIPs] = useState<Set<string>>(new Set());
 
   // Identity Verification Portal State
   const [verifyUserId, setVerifyUserId] = useState('');
@@ -76,7 +82,6 @@ export default function App() {
     const logsToMine = pendingLogs.slice(0, MAX_BLOCK_SIZE);
     
     // Simple Proof of Work simulation (just finding a hash starting with '0')
-    // In a real app, this would be much harder
     let nonce = 0;
     let hash = '';
     let found = false;
@@ -88,7 +93,6 @@ export default function App() {
 
     while (!found && nonce < 10000) {
        hash = await generateHash(blockDataString + nonce);
-       // For demo, just accept any hash to be fast, or require one '0'
        if (hash.startsWith('0')) {
          found = true;
        } else {
@@ -113,7 +117,6 @@ export default function App() {
   // Auto-mine if pending logs exist
   useEffect(() => {
     if (pendingLogs.length > 0 && !isMining) {
-        // Auto mine every 3 seconds if there is data
         const timer = setTimeout(() => {
             mineBlock();
         }, 3000);
@@ -126,15 +129,39 @@ export default function App() {
     setAllLogs(prev => [log, ...prev]);
   };
 
+  const toggleBlockIP = (ip: string) => {
+    setBlockedIPs(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(ip)) {
+            newSet.delete(ip);
+        } else {
+            newSet.add(ip);
+        }
+        return newSet;
+    });
+  };
+
   const handleSimulateTraffic = () => {
     const count = 3;
     for (let i = 0; i < count; i++) {
       const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
       const randomIP = mockIPs[Math.floor(Math.random() * mockIPs.length)];
-      // 10% chance of a "brute force" or weird attempt simulation
       const isSuspicious = Math.random() < 0.1;
       
-      const status = (randomUser.authorized && !isSuspicious) ? AccessStatus.GRANTED : AccessStatus.DENIED;
+      // Determine Status and Reason
+      let status = AccessStatus.PENDING;
+      let reason = '';
+
+      if (blockedIPs.has(randomIP)) {
+          status = AccessStatus.DENIED;
+          reason = 'Firewall Policy (IP Blocked)';
+      } else if (randomUser.authorized && !isSuspicious) {
+          status = AccessStatus.GRANTED;
+          reason = 'Valid Credentials & Signature';
+      } else {
+          status = AccessStatus.DENIED;
+          reason = isSuspicious ? 'Suspicious Behavior Detected' : 'Unauthorized Role';
+      }
       
       const newLog: AccessLog = {
         id: crypto.randomUUID(),
@@ -143,38 +170,59 @@ export default function App() {
         ipAddress: randomIP,
         action: 'NETWORK_LOGIN',
         status: status,
+        reason: reason,
         signature: 'sig_' + Math.random().toString(36).substring(7)
       };
       
-      // Add slight delay for realism
       setTimeout(() => addAccessLog(newLog), i * 500);
     }
   };
 
   const handleManualVerify = (e: React.FormEvent) => {
     e.preventDefault();
+    // Simulate IP for manual entry (matches one of the mock IPs for demo purposes)
+    const userIp = '192.168.1.100'; 
     const user = mockUsers.find(u => u.id === verifyUserId);
-    const isAuthorized = user?.authorized || false;
+    
+    let status = AccessStatus.DENIED;
+    let reason = 'Unknown Identity';
+    let msg = 'Identity verification failed.';
+
+    if (blockedIPs.has(userIp)) {
+        status = AccessStatus.DENIED;
+        reason = 'Firewall Policy (Local IP Blocked)';
+        msg = 'Access Denied: Your IP is blacklisted.';
+    } else if (user) {
+        if (user.authorized) {
+            status = AccessStatus.GRANTED;
+            reason = 'Biometric Match & Valid Key';
+            msg = 'Identity Verified. Access Granted.';
+        } else {
+            status = AccessStatus.DENIED;
+            reason = 'Unauthorized Role';
+            msg = 'Access Denied: Insufficient permissions.';
+        }
+    }
     
     const newLog: AccessLog = {
         id: crypto.randomUUID(),
         timestamp: Date.now(),
         userId: verifyUserId || 'anonymous',
-        ipAddress: '127.0.0.1',
+        ipAddress: userIp,
         action: 'MANUAL_PORTAL_LOGIN',
-        status: isAuthorized ? AccessStatus.GRANTED : AccessStatus.DENIED,
+        status: status,
+        reason: reason,
         signature: 'portal_' + Date.now()
     };
 
     addAccessLog(newLog);
     setVerifyResult({
-        status: isAuthorized ? 'SUCCESS' : 'FAILURE',
-        msg: isAuthorized ? 'Identity Verified. Access Granted.' : 'Identity Verification Failed. Access Denied.'
+        status: status === AccessStatus.GRANTED ? 'SUCCESS' : 'FAILURE',
+        msg: msg
     });
     setVerifyUserId('');
     
-    // Clear result after 3s
-    setTimeout(() => setVerifyResult(null), 3000);
+    setTimeout(() => setVerifyResult(null), 4000);
   };
 
   const runAIAnalysis = async () => {
@@ -269,7 +317,7 @@ export default function App() {
             
             {view === 'DASHBOARD' && (
                 <div className="max-w-6xl mx-auto animate-fadeIn">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-lg relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <Server size={64} />
@@ -282,11 +330,19 @@ export default function App() {
                              <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <Lock size={64} />
                             </div>
-                            <p className="text-slate-500 text-sm font-medium">Security Violations</p>
+                            <p className="text-slate-500 text-sm font-medium">Violations Prevented</p>
                             <h3 className="text-3xl font-bold text-red-400 mt-2">
                                 {allLogs.filter(l => l.status === AccessStatus.DENIED).length}
                             </h3>
                             <div className="mt-2 text-xs text-slate-400">blocked attempts</div>
+                        </div>
+                        <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-lg relative overflow-hidden">
+                             <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <Ban size={64} />
+                            </div>
+                            <p className="text-slate-500 text-sm font-medium">Active Firewall Rules</p>
+                            <h3 className="text-3xl font-bold text-orange-400 mt-2">{blockedIPs.size}</h3>
+                            <div className="mt-2 text-xs text-slate-400">IP addresses blocked</div>
                         </div>
                         <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-lg relative overflow-hidden">
                              <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -302,7 +358,10 @@ export default function App() {
 
                     <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-lg overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-                            <h3 className="font-bold text-slate-200">Live Access Feed</h3>
+                            <h3 className="font-bold text-slate-200 flex items-center space-x-2">
+                                <Activity size={18} className="text-cyan-400" />
+                                <span>Live Access Control Feed</span>
+                            </h3>
                             <div className="flex items-center space-x-2 text-xs text-slate-500">
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                 <span>Real-time</span>
@@ -315,23 +374,41 @@ export default function App() {
                                 </div>
                             )}
                             {allLogs.map((log) => (
-                                <div key={log.id} className="px-6 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+                                <div key={log.id} className="px-6 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors group">
                                     <div className="flex items-center space-x-4">
                                         <div className={`p-2 rounded-lg ${log.status === 'GRANTED' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                                             {log.status === 'GRANTED' ? <ShieldCheck size={18} /> : <AlertTriangle size={18} />}
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-slate-200">{log.userId}</p>
-                                            <p className="text-xs text-slate-500 font-mono">{log.ipAddress}</p>
+                                            <div className="flex items-center space-x-2">
+                                                <p className="text-xs text-slate-500 font-mono">{log.ipAddress}</p>
+                                                {blockedIPs.has(log.ipAddress) && (
+                                                    <span className="text-[10px] bg-red-900/50 text-red-300 px-1 rounded border border-red-800">BLOCKED</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <span className={`text-xs font-bold px-2 py-1 rounded ${log.status === 'GRANTED' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-                                            {log.status}
-                                        </span>
-                                        <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                                            {new Date(log.timestamp).toLocaleTimeString()}
-                                        </p>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="text-right mr-2">
+                                            <span className={`text-xs font-bold px-2 py-1 rounded ${log.status === 'GRANTED' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                                                {log.status}
+                                            </span>
+                                            <p className="text-[10px] text-slate-500 mt-1 italic">
+                                                {log.reason}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => toggleBlockIP(log.ipAddress)}
+                                            className={`p-2 rounded transition-colors opacity-0 group-hover:opacity-100 ${
+                                                blockedIPs.has(log.ipAddress)
+                                                    ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                                                    : 'bg-red-900/20 text-red-400 hover:bg-red-900/40'
+                                            }`}
+                                            title={blockedIPs.has(log.ipAddress) ? "Unblock IP" : "Block IP"}
+                                        >
+                                            {blockedIPs.has(log.ipAddress) ? <CheckCircle size={16} /> : <Ban size={16} />}
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -379,7 +456,7 @@ export default function App() {
                                 <Users size={32} className="text-cyan-400" />
                             </div>
                             <h2 className="text-2xl font-bold text-white">Identity Verification Portal</h2>
-                            <p className="text-slate-400 mt-2">Secure entry point for network resources.</p>
+                            <p className="text-slate-400 mt-2">Secure entry point with Blockchain Verification.</p>
                         </div>
                         
                         <div className="p-8">
@@ -407,7 +484,7 @@ export default function App() {
                                     disabled={!verifyUserId}
                                     className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-bold py-3 rounded-lg shadow-lg shadow-cyan-900/50 transition-all transform hover:scale-[1.01] disabled:opacity-50 disabled:scale-100"
                                 >
-                                    Verify Identity & Log Access
+                                    Verify Identity & Check Authorization
                                 </button>
                             </form>
 
@@ -417,11 +494,11 @@ export default function App() {
                                         ? 'bg-green-900/20 border-green-900 text-green-200' 
                                         : 'bg-red-900/20 border-red-900 text-red-200'
                                 }`}>
-                                    {verifyResult.status === 'SUCCESS' ? <ShieldCheck className="mt-1" /> : <AlertTriangle className="mt-1" />}
+                                    {verifyResult.status === 'SUCCESS' ? <CheckCircle className="mt-1" /> : <XCircle className="mt-1" />}
                                     <div>
                                         <h4 className="font-bold">{verifyResult.status === 'SUCCESS' ? 'Access Granted' : 'Access Denied'}</h4>
                                         <p className="text-sm opacity-80">{verifyResult.msg}</p>
-                                        <p className="text-xs mt-2 opacity-60 font-mono">Transaction logged to memory pool.</p>
+                                        <p className="text-xs mt-2 opacity-60 font-mono">Immutable log written to memory pool.</p>
                                     </div>
                                 </div>
                             )}

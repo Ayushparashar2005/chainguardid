@@ -24,6 +24,12 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({ logs }) => {
 
   const COLORS = ['#22d3ee', '#ef4444'];
 
+  // Fix: Prepare data for BarChart with a numeric value for the bar height
+  const recentLogs = logs.slice(-15).map(l => ({
+    ...l,
+    value: 1
+  }));
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-lg">
@@ -67,7 +73,8 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({ logs }) => {
         <div className="h-64">
            {/* Using a simplified bar chart to represent stream of events */}
            <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={logs.slice(-15)}>
+            {/* Fix: Pass formatted data to BarChart and remove invalid 'data' prop from Bar */}
+            <BarChart data={recentLogs}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="timestamp" tick={false} />
               <YAxis hide />
@@ -89,8 +96,8 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({ logs }) => {
                   return null;
                 }}
               />
-              <Bar dataKey="status" data={logs.slice(-15).map(l => ({...l, val: 1}))}>
-                {logs.slice(-15).map((entry, index) => (
+              <Bar dataKey="value">
+                {recentLogs.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.status === AccessStatus.GRANTED ? '#22d3ee' : '#ef4444'} />
                 ))}
               </Bar>

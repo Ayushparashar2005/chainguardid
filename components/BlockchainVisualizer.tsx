@@ -1,6 +1,6 @@
 import React from 'react';
 import { Block } from '../types';
-import { Link, Box, Hash, Clock } from 'lucide-react';
+import { Link, Box, Hash, Clock, AlertCircle } from 'lucide-react';
 
 interface BlockchainVisualizerProps {
   chain: Block[];
@@ -52,7 +52,7 @@ export const BlockchainVisualizer: React.FC<BlockchainVisualizerProps> = ({ chai
               </div>
               
               {/* Hover detail overlay */}
-              <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-sm rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col overflow-hidden">
+              <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-sm rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col overflow-hidden z-20">
                 <h4 className="text-cyan-400 font-bold text-sm mb-2">Transactions</h4>
                 <div className="overflow-y-auto flex-1 space-y-2 text-xs scrollbar-thin">
                   {block.data.length === 0 ? (
@@ -60,13 +60,18 @@ export const BlockchainVisualizer: React.FC<BlockchainVisualizerProps> = ({ chai
                   ) : (
                     block.data.map(tx => (
                       <div key={tx.id} className="border-b border-slate-800 pb-1">
-                        <div className="flex justify-between">
-                          <span className={tx.status === 'GRANTED' ? 'text-green-500' : 'text-red-500'}>
+                        <div className="flex justify-between items-center">
+                          <span className={`font-bold ${tx.status === 'GRANTED' ? 'text-green-500' : 'text-red-500'}`}>
                             {tx.status}
                           </span>
                           <span className="text-slate-500">{tx.ipAddress}</span>
                         </div>
-                        <div className="text-slate-400 truncate">{tx.userId}</div>
+                        <div className="flex justify-between items-center mt-1">
+                          <div className="text-slate-300 truncate max-w-[100px]">{tx.userId}</div>
+                          {tx.reason && (
+                             <div className="text-[10px] text-slate-500 italic">{tx.reason}</div>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
