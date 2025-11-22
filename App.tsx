@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShieldCheck, 
   LayoutDashboard, 
@@ -12,13 +12,16 @@ import {
   Ban,
   CheckCircle,
   XCircle,
-  Activity
+  Activity,
+  Cpu,
+  Zap,
+  Search,
+  BarChart2
 } from 'lucide-react';
 import { AccessLog, AccessStatus, Block, GENESIS_HASH, ViewState } from './types';
 import { BlockchainVisualizer } from './components/BlockchainVisualizer';
 import { NetworkStats } from './components/NetworkStats';
-import { analyzeSecurityLogs } from './services/geminiService';
-import ReactMarkdown from 'react-markdown';
+import { runHeuristicAnalysis, ThreatReport } from './services/mlService';
 
 // --- Utility Functions for Simulation ---
 
@@ -49,7 +52,7 @@ export default function App() {
   const [pendingLogs, setPendingLogs] = useState<AccessLog[]>([]);
   const [allLogs, setAllLogs] = useState<AccessLog[]>([]);
   const [isMining, setIsMining] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [mlReport, setMlReport] = useState<ThreatReport | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [blockedIPs, setBlockedIPs] = useState<Set<string>>(new Set());
 
@@ -146,7 +149,7 @@ export default function App() {
     for (let i = 0; i < count; i++) {
       const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
       const randomIP = mockIPs[Math.floor(Math.random() * mockIPs.length)];
-      const isSuspicious = Math.random() < 0.1;
+      const isSuspicious = Math.random() < 0.15; // Increased suspicion rate for ML demo
       
       // Determine Status and Reason
       let status = AccessStatus.PENDING;
@@ -225,11 +228,14 @@ export default function App() {
     setTimeout(() => setVerifyResult(null), 4000);
   };
 
-  const runAIAnalysis = async () => {
+  const runMLAnalysis = () => {
     setIsAnalyzing(true);
-    const report = await analyzeSecurityLogs(chain);
-    setAiAnalysis(report);
-    setIsAnalyzing(false);
+    // Simulate processing time for dramatic effect
+    setTimeout(() => {
+        const report = runHeuristicAnalysis(chain);
+        setMlReport(report);
+        setIsAnalyzing(false);
+    }, 1500);
   };
 
   return (
@@ -264,11 +270,11 @@ export default function App() {
             <span>Identity Portal</span>
           </button>
           <button 
-            onClick={() => setView('AI_ANALYSIS')}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${view === 'AI_ANALYSIS' ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-900' : 'text-slate-400 hover:bg-slate-800'}`}
+            onClick={() => setView('ML_ANALYSIS')}
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${view === 'ML_ANALYSIS' ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-900' : 'text-slate-400 hover:bg-slate-800'}`}
           >
-            <AlertTriangle size={20} />
-            <span>AI Threat Analysis</span>
+            <Cpu size={20} />
+            <span>ML Sentinel</span>
           </button>
         </nav>
 
@@ -297,7 +303,7 @@ export default function App() {
                 {view === 'DASHBOARD' && 'Network Overview'}
                 {view === 'BLOCKCHAIN' && 'Immutable Audit Log'}
                 {view === 'VERIFY' && 'Access Control Portal'}
-                {view === 'AI_ANALYSIS' && 'Intelligent Threat Detection'}
+                {view === 'ML_ANALYSIS' && 'Heuristic Anomaly Detection Engine'}
             </h2>
             
             <div className="flex items-center space-x-4">
@@ -507,48 +513,159 @@ export default function App() {
                 </div>
             )}
 
-            {view === 'AI_ANALYSIS' && (
-                <div className="max-w-4xl mx-auto animate-fadeIn">
+            {view === 'ML_ANALYSIS' && (
+                <div className="max-w-5xl mx-auto animate-fadeIn pb-8">
                     <div className="mb-6 flex justify-between items-end">
                         <div>
-                            <h2 className="text-2xl font-bold text-white">AI Threat Analysis</h2>
-                            <p className="text-slate-400">Powered by Gemini 2.5 Flash</p>
+                            <h2 className="text-2xl font-bold text-white">ML Sentinel</h2>
+                            <p className="text-slate-400">Native Heuristic Anomaly Detection Engine</p>
                         </div>
                         <button
-                            onClick={runAIAnalysis}
+                            onClick={runMLAnalysis}
                             disabled={isAnalyzing || chain.length <= 1}
-                            className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-purple-900/40 disabled:opacity-50"
+                            className="flex items-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-cyan-900/40 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isAnalyzing ? (
-                                <span className="animate-pulse">Analyzing Chain...</span>
+                                <span className="animate-pulse">Scanning Logs...</span>
                             ) : (
                                 <>
-                                    <Server size={18} />
-                                    <span>Run Security Audit</span>
+                                    <Zap size={18} />
+                                    <span>Scan Network</span>
                                 </>
                             )}
                         </button>
                     </div>
 
-                    <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 min-h-[400px] relative">
-                        {!aiAnalysis && !isAnalyzing && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-                                <ShieldCheck size={64} className="mb-4 opacity-20" />
-                                <p>No analysis generated yet.</p>
-                                <p className="text-sm">Generate some traffic, wait for blocks, then run the audit.</p>
+                    <div className="grid grid-cols-1 gap-6">
+                        {/* Empty State */}
+                        {!mlReport && !isAnalyzing && (
+                             <div className="bg-slate-900 rounded-xl border border-slate-800 p-12 flex flex-col items-center justify-center text-center">
+                                <Search size={64} className="text-slate-700 mb-4" />
+                                <h3 className="text-xl font-bold text-slate-300 mb-2">Ready to Scan</h3>
+                                <p className="text-slate-500 max-w-md">
+                                    The ML engine will analyze access patterns, velocity, and failure rates across the blockchain ledger to identify potential threats.
+                                </p>
                             </div>
                         )}
 
+                        {/* Scanning State */}
                         {isAnalyzing && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10">
-                                <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
-                                <p className="text-purple-400 font-mono animate-pulse">Reading Blockchain Data...</p>
+                             <div className="bg-slate-900 rounded-xl border border-slate-800 p-12 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                                <div className="scan-line"></div>
+                                <div className="w-16 h-16 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mb-6"></div>
+                                <h3 className="text-xl font-bold text-white mb-2">Processing Neural Heuristics</h3>
+                                <p className="text-cyan-400 font-mono text-sm">
+                                    Analyzing {chain.length > 0 ? chain.map(b=>b.data.length).reduce((a,b)=>a+b, 0) : 0} transactions...
+                                </p>
                             </div>
                         )}
 
-                        {aiAnalysis && (
-                            <div className="prose prose-invert prose-sm max-w-none">
-                                <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                        {/* Report State */}
+                        {mlReport && !isAnalyzing && (
+                            <div className="space-y-6">
+                                {/* Top Stats */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className={`p-5 rounded-xl border flex items-center justify-between ${
+                                        mlReport.overallThreatLevel === 'CRITICAL' || mlReport.overallThreatLevel === 'HIGH'
+                                            ? 'bg-red-950/30 border-red-900'
+                                            : mlReport.overallThreatLevel === 'MEDIUM'
+                                            ? 'bg-orange-950/30 border-orange-900'
+                                            : 'bg-emerald-950/30 border-emerald-900'
+                                    }`}>
+                                        <div>
+                                            <p className="text-slate-400 text-xs uppercase font-bold">Threat Level</p>
+                                            <h3 className={`text-2xl font-bold mt-1 ${
+                                                mlReport.overallThreatLevel === 'CRITICAL' ? 'text-red-500' :
+                                                mlReport.overallThreatLevel === 'HIGH' ? 'text-red-400' :
+                                                mlReport.overallThreatLevel === 'MEDIUM' ? 'text-orange-400' : 'text-emerald-400'
+                                            }`}>{mlReport.overallThreatLevel}</h3>
+                                        </div>
+                                        <Activity size={32} className={`${
+                                                mlReport.overallThreatLevel === 'CRITICAL' ? 'text-red-500' :
+                                                mlReport.overallThreatLevel === 'HIGH' ? 'text-red-400' :
+                                                mlReport.overallThreatLevel === 'MEDIUM' ? 'text-orange-400' : 'text-emerald-400'
+                                            }`} />
+                                    </div>
+
+                                    <div className="p-5 rounded-xl border border-slate-800 bg-slate-900 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-slate-400 text-xs uppercase font-bold">Risk Score</p>
+                                            <h3 className="text-2xl font-bold text-white mt-1">{mlReport.score}/100</h3>
+                                        </div>
+                                        <div className="w-16 h-16 relative flex items-center justify-center">
+                                            <svg className="w-full h-full transform -rotate-90">
+                                                <circle cx="32" cy="32" r="28" stroke="#1e293b" strokeWidth="4" fill="none"/>
+                                                <circle cx="32" cy="32" r="28" stroke="#06b6d4" strokeWidth="4" fill="none" 
+                                                        strokeDasharray={2 * Math.PI * 28} 
+                                                        strokeDashoffset={2 * Math.PI * 28 * (1 - mlReport.score / 100)} />
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-5 rounded-xl border border-slate-800 bg-slate-900 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-slate-400 text-xs uppercase font-bold">Anomalies Found</p>
+                                            <h3 className="text-2xl font-bold text-white mt-1">{mlReport.stats.suspiciousCount}</h3>
+                                        </div>
+                                        <AlertTriangle size={32} className="text-slate-500" />
+                                    </div>
+                                </div>
+
+                                {/* Anomaly List */}
+                                <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-slate-800">
+                                        <h4 className="font-bold text-slate-200">Detailed Threat Findings</h4>
+                                    </div>
+                                    
+                                    {mlReport.anomalies.length === 0 ? (
+                                        <div className="p-8 text-center">
+                                            <CheckCircle size={48} className="mx-auto text-emerald-500 mb-3" />
+                                            <p className="text-slate-400">No significant anomalies detected in the recent blocks.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-slate-800">
+                                            {mlReport.anomalies.map(anomaly => (
+                                                <div key={anomaly.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-800/30 transition-colors">
+                                                    <div className="flex items-start space-x-4">
+                                                        <div className={`mt-1 p-2 rounded-lg ${
+                                                            anomaly.severity === 'HIGH' ? 'bg-red-500/10 text-red-500' : 'bg-orange-500/10 text-orange-500'
+                                                        }`}>
+                                                            <AlertTriangle size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <h5 className="font-bold text-slate-200">{anomaly.type.replace('_', ' ')}</h5>
+                                                                <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                                                                    anomaly.severity === 'HIGH' ? 'bg-red-900/40 text-red-400 border border-red-900' : 'bg-orange-900/40 text-orange-400 border border-orange-900'
+                                                                }`}>
+                                                                    {anomaly.severity}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-slate-400 text-sm mt-1">{anomaly.description}</p>
+                                                            <div className="flex items-center space-x-4 mt-2 text-xs font-mono text-slate-500">
+                                                                <span>Target: {anomaly.entity}</span>
+                                                                <span>Events: {anomaly.count}</span>
+                                                                <span>Time: {new Date(anomaly.timestamp).toLocaleTimeString()}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 md:mt-0 flex items-center space-x-3">
+                                                        <button 
+                                                            onClick={() => {
+                                                                toggleBlockIP(anomaly.entity);
+                                                                // Optimistic UI update suggestion
+                                                                alert(`Command sent to firewall: ${blockedIPs.has(anomaly.entity) ? 'UNBLOCK' : 'BLOCK'} ${anomaly.entity}`);
+                                                            }}
+                                                            className="px-3 py-1.5 bg-slate-800 hover:bg-red-900/30 text-slate-300 hover:text-red-400 border border-slate-700 hover:border-red-900 rounded text-xs font-medium transition-colors"
+                                                        >
+                                                            {blockedIPs.has(anomaly.entity) ? 'Unblock Entity' : 'Block Entity'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

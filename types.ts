@@ -31,7 +31,7 @@ export interface UserIdentity {
   authorized: boolean;
 }
 
-export type ViewState = 'DASHBOARD' | 'BLOCKCHAIN' | 'VERIFY' | 'AI_ANALYSIS';
+export type ViewState = 'DASHBOARD' | 'BLOCKCHAIN' | 'VERIFY' | 'ML_ANALYSIS';
 
 // Constants used for simulation
 export const GENESIS_HASH = "0000000000000000000000000000000000000000000000000000000000000000";

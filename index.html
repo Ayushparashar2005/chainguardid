@@ -20,6 +20,14 @@
                 850: '#1e293b',
                 900: '#0f172a',
                 950: '#020617',
+              },
+              emerald: {
+                400: '#34d399',
+                900: '#064e3b',
+              },
+              rose: {
+                400: '#fb7185',
+                900: '#881337',
               }
             },
             fontFamily: {
@@ -45,6 +53,17 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #475569; 
       }
+      @keyframes scan {
+        0% { background-position: 0% 0%; }
+        100% { background-position: 100% 100%; }
+      }
+      .scan-line {
+        background: linear-gradient(to bottom, transparent, rgba(34, 211, 238, 0.2), transparent);
+        height: 4px;
+        width: 100%;
+        position: absolute;
+        animation: scan 2s linear infinite;
+      }
     </style>
   <script type="importmap">
 {
@@ -52,10 +71,10 @@
     "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
     "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
     "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
   }
 }
 </script>
