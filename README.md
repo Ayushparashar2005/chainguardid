@@ -265,8 +265,12 @@ Instead of a "Black Box" AI, we use **Heuristic Analysis**. This is a rule-based
 1.  **S. Nakamoto**, "Bitcoin: A Peer-to-Peer Electronic Cash System," 2008. [Online]. Available: https://bitcoin.org/bitcoin.pdf. (Foundational paper for Blockchain structure and Proof of Work).
 2.  **D. F. Ferraiolo and D. R. Kuhn**, "Role-Based Access Control," in *15th National Computer Security Conference*, 1992. (Foundational paper for the RBAC model used in verification).
 3.  **J. P. Anderson**, "Computer Security Threat Monitoring and Surveillance," James P. Anderson Co., Fort Washington, PA, Tech. Rep., 1980. (The seminal paper defining the concept of analyzing audit trails for intrusion detection).
-4.  **S. Rose, O. Borchert, S. Mitchell, and S. Connelly**, "Zero Trust Architecture," NIST Special Publication 800-207, 2020. (Standard defining the Zero Trust principles simulated in this app).
-5.  **V. Chandola, A. Banerjee, and V. Kumar**, "Anomaly detection: A survey," in *ACM Computing Surveys*, vol. 41, no. 3, pp. 1–58, 2009. (Reference for the statistical anomaly detection methods used in the ML Service).
+4.  **G. Zyskind, O. Nathan, and A. Pentland**, "Decentralizing Privacy: Using Blockchain to Protect Personal Data," in *2015 IEEE Security and Privacy Workshops*, San Jose, CA, 2015, pp. 180-184. doi: 10.1109/SPW.2015.27. (Relevant to the core concept of blockchain-based identity management).
+5.  **A. Dorri, S. S. Kanhere, R. Jurdak, and P. Gauravaram**, "Blockchain for IoT Security and Privacy: A Case Study," in *2017 IEEE International Conference on Pervasive Computing and Communications Workshops (PerCom Workshops)*, Kona, HI, 2017, pp. 169-174. (Establishes the precedent for using blockchain to secure network nodes).
+6.  **W. Meng, W. Z. Tischhauser, Q. Wang, Y. Wang, and J. Han**, "When Intrusion Detection Meets Blockchain Technology: A Review," in *IEEE Access*, vol. 6, pp. 10179-10188, 2018. doi: 10.1109/ACCESS.2018.2799854. (Directly relevant to the "ML Sentinel" feature, discussing how IDS can leverage blockchain).
+7.  **L. Xu, L. Chen, N. Shah, Z. Gao, and Y. Lu**, "A Blockchain-Based Approach for Secure Logging in Distributed Systems," in *2018 IEEE 22nd International Conference on Computer Supported Cooperative Work in Design (CSCWD)*, Nanjing, 2018, pp. 716-721. (Directly validates the "Immutable Log" architecture used in ChainGuard ID).
+8.  **S. Rose, O. Borchert, S. Mitchell, and S. Connelly**, "Zero Trust Architecture," NIST Special Publication 800-207, 2020. (Standard defining the Zero Trust principles simulated in this app).
+9.  **V. Chandola, A. Banerjee, and V. Kumar**, "Anomaly detection: A survey," in *ACM Computing Surveys*, vol. 41, no. 3, pp. 1–58, 2009. (Reference for the statistical anomaly detection methods used in the ML Service).
 
 ---
 
